@@ -21,6 +21,22 @@ Resume:
 ${resumeText}
 `;
 
+const buildRewritePrompt = (textToRewrite, instruction) => `
+You are an expert resume writer. Rewrite the following resume section to make it more professional, impactful, and ATS-friendly. Focus on action verbs and quantifiable results where possible.
+
+Original Text:
+${textToRewrite}
+
+Special Instruction: ${instruction || "Make it more professional and impactful."}
+
+Return ONLY a valid JSON object — no markdown, no code fences, no extra text.
+
+JSON format:
+{
+  "rewrittenText": "<the rewritten text in a single string, formatting preserved as much as possible>"
+}
+`;
+
 // ─── Helper: strip markdown fences and parse JSON ─────────────────────────────
 const safeParseJSON = (raw) => {
     const cleaned = raw
@@ -99,8 +115,7 @@ const tryGroq = async (prompt) => {
 };
 
 // ─── Main: try providers in order, stop on first success ─────────────────────
-const analyzeWithAI = async (resumeText) => {
-    const prompt = buildPrompt(resumeText);
+const executeWithFallback = async (prompt) => {
     const providers = [
         { name: "OpenRouter (Llama 3.3 70B)", fn: tryOpenRouter },
         { name: "Google Gemini 2.0 Flash",    fn: tryGemini     },
@@ -129,4 +144,14 @@ const analyzeWithAI = async (resumeText) => {
     throw error;
 };
 
-module.exports = analyzeWithAI;
+const analyzeWithAI = async (resumeText) => {
+    const prompt = buildPrompt(resumeText);
+    return await executeWithFallback(prompt);
+};
+
+const rewriteWithAI = async (textToRewrite, instruction) => {
+    const prompt = buildRewritePrompt(textToRewrite, instruction);
+    return await executeWithFallback(prompt);
+};
+
+module.exports = { analyzeWithAI, rewriteWithAI };

@@ -66,6 +66,7 @@ app.get("/health", (req, res) => {
 });
 
 // ─── Routes ───────────────────────────────────────────────────────────────────
+app.use("/api/auth", require("./src/routes/auth.routes"));
 app.use("/api/resume", resumeRoutes);
 
 // ─── 404 handler ──────────────────────────────────────────────────────────────

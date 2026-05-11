@@ -4,7 +4,7 @@ const Analysis = require("../models/analysis.model");
 
 const extractText = require("../services/parser.service");
 
-const analyzeWithAI = require("../services/ai.service");
+const { analyzeWithAI, rewriteWithAI } = require("../services/ai.service");
 
 const analyzeResume = async (req, res, next) => {
     let filePath = "";
@@ -37,6 +37,7 @@ const analyzeResume = async (req, res, next) => {
 
         // save in db
         const analysis = await Analysis.create({
+            user: req.user ? req.user._id : undefined,
             resumeText,
             analysis: aiResult,
         });
@@ -57,6 +58,42 @@ const analyzeResume = async (req, res, next) => {
     }
 };
 
+const getMyAnalyses = async (req, res, next) => {
+    try {
+        const analyses = await Analysis.find({ user: req.user._id }).sort({ createdAt: -1 });
+        res.status(200).json({
+            success: true,
+            data: analyses,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const rewriteResumeSection = async (req, res, next) => {
+    try {
+        const { text, instruction } = req.body;
+
+        if (!text) {
+            return res.status(400).json({
+                success: false,
+                message: "Text to rewrite is required",
+            });
+        }
+
+        const aiResult = await rewriteWithAI(text, instruction);
+
+        res.status(200).json({
+            success: true,
+            data: aiResult,
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     analyzeResume,
+    getMyAnalyses,
+    rewriteResumeSection,
 };
