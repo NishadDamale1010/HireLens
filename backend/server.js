@@ -34,15 +34,20 @@ const allowedOrigins = [
     process.env.FRONTEND_URL, // set this in production (e.g. https://hirelens.vercel.app)
 ].filter(Boolean);
 
-app.use(cors({
+const corsOptions = {
     origin: (origin, cb) => {
         // allow requests with no origin (curl, Postman, server-to-server)
         if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
         cb(new Error(`CORS: origin ${origin} not allowed`));
     },
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
     credentials: true,
-}));
+};
+
+// Handle preflight OPTIONS requests for all routes
+app.options("*", cors(corsOptions));
+app.use(cors(corsOptions));
 
 app.use(express.json({ limit: "1mb" }));
 app.use(express.urlencoded({ extended: true, limit: "1mb" }));
