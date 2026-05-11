@@ -128,5 +128,5 @@ npm run dev
 ---
 
 <div align="center">
-  <p>Built with ❤️ by Nishad Damale.</p>
+  <p>Built by Nishad Damale.</p>
 </div>
