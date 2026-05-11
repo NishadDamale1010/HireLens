@@ -113,7 +113,7 @@ export default function Home() {
       const response = await api.post("/resume/analyze", formData);
       setResult(response.data.data.analysis);
     } catch (err) {
-      setError(err.response?.data?.message || "Analysis failed. Please try again.");
+      setError(err.displayMessage || err.response?.data?.message || "Analysis failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -325,7 +325,7 @@ export default function Home() {
 
         {/* Footer */}
         <footer className="mt-16 text-center text-slate-600 text-sm">
-          HireLens · Powered by DeepSeek AI via OpenRouter
+          HireLens · Powered by Llama 3.3 · Gemini · Groq (Free AI Providers)
         </footer>
 
       </div>
