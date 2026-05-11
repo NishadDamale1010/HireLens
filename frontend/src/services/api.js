@@ -9,7 +9,6 @@ const baseURL = import.meta.env.VITE_API_URL
 const api = axios.create({
     baseURL,
     timeout: 120000, // 2 min — AI analysis can take a while on free tier
-    headers: { "Content-Type": "application/json" },
 });
 
 // Global response interceptor — normalise error messages
