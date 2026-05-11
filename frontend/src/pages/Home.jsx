@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import api from "../services/api";
+import html2pdf from "html2pdf.js";
 
 // Circular progress ring
 function ScoreRing({ score }) {
@@ -82,6 +83,87 @@ function ListItem({ text, icon, color }) {
   );
 }
 
+// Rewrite Tool Component
+function RewriteTool() {
+  const [text, setText] = useState("");
+  const [instruction, setInstruction] = useState("");
+  const [result, setResult] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleRewrite = async () => {
+    if (!text) return;
+    try {
+      setLoading(true);
+      setError("");
+      setResult("");
+      const res = await api.post("/resume/rewrite", { text, instruction });
+      setResult(res.data.data.rewrittenText);
+    } catch (err) {
+      setError(err.displayMessage || "Failed to rewrite text.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="bg-slate-800/60 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 mt-8">
+      <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+        <span>✨</span> AI Resume Rewriter
+      </h3>
+      <p className="text-sm text-slate-400 mb-4">
+        Paste a bullet point or section from your resume that you want to improve, and our AI will rewrite it to be more impactful.
+      </p>
+      
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Original Text</label>
+          <textarea 
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500 h-24 resize-none"
+            placeholder="e.g. Led a team of 5 developers to build a web app."
+          />
+        </div>
+        
+        <div>
+          <label className="block text-sm font-medium text-slate-300 mb-1">Instruction (Optional)</label>
+          <input 
+            type="text"
+            value={instruction}
+            onChange={(e) => setInstruction(e.target.value)}
+            className="w-full bg-slate-900 border border-slate-700 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-violet-500"
+            placeholder="e.g. Make it sound more technical and focus on leadership."
+          />
+        </div>
+
+        {error && <div className="text-rose-400 text-sm">{error}</div>}
+
+        <button 
+          onClick={handleRewrite}
+          disabled={loading || !text}
+          className="bg-violet-600 hover:bg-violet-500 disabled:bg-slate-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+        >
+          {loading ? "Rewriting..." : "Rewrite Section"}
+        </button>
+
+        {result && (
+          <div className="mt-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl">
+            <h4 className="text-sm font-bold text-emerald-400 mb-2">Rewritten Result:</h4>
+            <p className="text-sm text-slate-200 whitespace-pre-wrap">{result}</p>
+            <button 
+              onClick={() => navigator.clipboard.writeText(result)}
+              className="mt-3 text-xs bg-slate-800 hover:bg-slate-700 text-white py-1 px-3 rounded transition-colors"
+            >
+              Copy to Clipboard
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [file, setFile]       = useState(null);
   const [loading, setLoading] = useState(false);
@@ -128,6 +210,18 @@ export default function Home() {
 
   const scoreLabel = (s) => s >= 75 ? "Excellent" : s >= 50 ? "Good" : "Needs Work";
   const scoreColor = (s) => s >= 75 ? "text-emerald-400" : s >= 50 ? "text-amber-400" : "text-rose-400";
+
+  const exportPDF = () => {
+    const element = document.getElementById("analysis-results");
+    const opt = {
+      margin: 0.5,
+      filename: `HireLens_Analysis_${file?.name || "Resume"}.pdf`,
+      image: { type: "jpeg", quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true, backgroundColor: "#020617" },
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+    };
+    html2pdf().set(opt).from(element).save();
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white font-sans">
@@ -245,15 +339,24 @@ export default function Home() {
             {/* Top bar */}
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-bold text-white">Analysis Results</h2>
-              <button
-                onClick={reset}
-                className="text-sm text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-xl transition-all duration-200"
-              >
-                ← Analyze Another
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={exportPDF}
+                  className="text-sm text-white bg-slate-800 hover:bg-slate-700 border border-slate-600 px-4 py-2 rounded-xl transition-all duration-200"
+                >
+                  📥 Export PDF
+                </button>
+                <button
+                  onClick={reset}
+                  className="text-sm text-slate-400 hover:text-white border border-slate-700 hover:border-slate-500 px-4 py-2 rounded-xl transition-all duration-200"
+                >
+                  ← Analyze Another
+                </button>
+              </div>
             </div>
 
-            {/* Score + Summary */}
+            <div id="analysis-results" className="space-y-6 p-2 rounded-2xl">
+              {/* Score + Summary */}
             <div className="grid sm:grid-cols-2 gap-5">
               {/* Score */}
               <Card title="ATS Score" icon="🎯">
@@ -319,6 +422,10 @@ export default function Home() {
                 </div>
               </Card>
             )}
+            </div>
+
+            {/* AI Resume Rewriter Tool */}
+            <RewriteTool />
 
           </div>
         )}
